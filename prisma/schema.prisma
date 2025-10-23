@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 
 generator client {
   provider = "prisma-client-js"
@@ -16,13 +13,35 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  USER
-  VISITOR
-  GUEST
+  CUSTOMER
+  SELLER
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+
 model User {
-  id            String    @id @map("_id")
+  id            String    @id @default(cuid()) @map("_id")
   createdAt     DateTime
   updatedAt     DateTime
 
@@ -30,16 +49,70 @@ model User {
   email         String
   emailVerified Boolean
   image         String?
-  role          UserRole @default(USER)
+  role          UserRole @default(CUSTOMER)
   sessions      Session[]
   accounts      Account[]
+  orders        Order[]
 
   @@unique([email])
   @@map("user")
 }
 
+model Order {
+  id           String       @id @default(cuid()) @map("_id")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  // Order information
+  orderNumber  String       @unique
+  status       OrderStatus  @default(PENDING)
+  
+  // Customer information
+  userId       String?      
+  user         User?        @relation(fields: [userId], references: [id])
+  email        String
+  firstName    String
+  lastName     String
+  phone        String
+  
+  // Shipping information
+  street       String
+  city         String
+  state        String
+  zipCode      String
+  country      String
+  
+  // Payment information
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentId      String?       // External payment processor ID
+  
+  // Order items
+  items        OrderItem[]
+  subtotal     Float
+  shipping     Float
+  tax          Float
+  total        Float
+  
+  @@map("order")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid()) @map("_id")
+  orderId     String   
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String   
+  name        String
+  price       Float
+  quantity    Int
+  image       String?
+  
+  @@map("orderItem")
+}
+
+
 model Session {
-  id        String   @id @map("_id")
+  id        String   @id @default(cuid()) @map("_id")
   createdAt DateTime
   updatedAt DateTime
 
@@ -48,7 +121,7 @@ model Session {
   
   ipAddress String?
   userAgent String?
-  userId    String
+  userId    String   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
@@ -56,10 +129,10 @@ model Session {
 }
 
 model Account {
-  id                    String    @id @map("_id")
+  id                    String    @id @default(cuid()) @map("_id")
   accountId             String
   providerId            String
-  userId                String
+  userId                String    
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
@@ -75,7 +148,7 @@ model Account {
 }
 
 model Verification {
-  id         String    @id @map("_id")
+  id         String    @id @default(cuid()) @map("_id")
   identifier String
   value      String
   expiresAt  DateTime
@@ -84,6 +157,7 @@ model Verification {
 
   @@map("verification")
 }
+
 
 
 

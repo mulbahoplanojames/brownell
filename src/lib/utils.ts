@@ -23,3 +23,24 @@ export function getNormalizedName(name: string) {
     .replace(/[^a-zA-Z\s'-]/g, "")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
+
+/**
+ * Generates a unique order number in the format: ORD-YYYYMMDD-XXXX
+ * Where XXXX is a random 4-character alphanumeric string
+ */
+export function generateOrderNumber(): string {
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `ORD-${dateStr}-${randomStr}`;
+}
+
+/**
+ * Formats a price with the specified currency
+ */
+export function formatPrice(amount: number, currency: string = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount);
+}
